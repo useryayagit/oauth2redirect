@@ -80,9 +80,10 @@
         <div class="success" id="fix-success" style="display:none;">
             <strong>✅ 修复验证通过:</strong> Activity 拒绝启动，说明漏洞已修复。
         </div>
-        
+    
+ 
         <h3>测试按钮:</h3>
-        <a href="magichome://oauth2redirect?code=0&state=ok" 
+        <a href="magichome://oauth2redirect?error=400&error_description=Test+Error&state=TEST" 
            class="button" 
            id="test-btn"
            onclick="startTest()">
