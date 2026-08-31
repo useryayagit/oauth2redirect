@@ -1,19 +1,165 @@
- <!DOCTYPE html>
-   <html>
-   <head>
-       <title>OAuth2 Redirect Test</title>
-   </head>
-   <body>
-       <h1>OAuth2 Redirect Test Page</h1>
-       <p>Code: <span id="code"></span></p>
-       <script>
-           // 获取 URL 参数
-           const urlParams = new URLSearchParams(window.location.search);
-           const code = urlParams.get('code');
-           document.getElementById('code').textContent = code;
-           
-           // 可以尝试启动 Android App
-           // window.location.href = "magichome://oauth2redirect?code=" + code;
-       </script>
-   </body>
-   </html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2 Redirect 安全测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 OAuth2 RedirectUriReceiverActivity 安全测试</h1>
+        
+        <div class="info">
+            <strong>测试目的:</strong> 验证 RedirectUriReceiverActivity 是否接受任意 URI
+        </div>
+        
+        <div id="params">
+            <h3>当前 URL 参数:</h3>
+            <pre id="params-display"></pre>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div class="warning" id="vuln-warning" style="display:none;">
+            <strong>⚠️ 警告:</strong> 如果 Activity 成功启动，说明存在严重安全漏洞！
+            <br>攻击者可以窃取 OAuth2 授权码并劫持用户账号。
+        </div>
+        
+        <div class="success" id="fix-success" style="display:none;">
+            <strong>✅ 修复验证通过:</strong> Activity 拒绝启动，说明漏洞已修复。
+        </div>
+        
+        <h3>测试按钮:</h3>
+        <a href="magichome://oauth2redirect?code=TEST123&state=STATE456" 
+           class="button" 
+           id="test-btn"
+           onclick="startTest()">
+           📱 启动 RedirectUriReceiverActivity
+        </a>
+        
+        <a href="https://useryayagit.github.io/oauth2redirect?code=NEW_TEST&state=NEW_STATE" 
+           class="button">
+           🔄 重新测试
+        </a>
+    </div>
+    
+    <script>
+        // 获取 URL 参数
+        function getParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const params = {};
+            for (const [key, value] of urlParams) {
+                params[key] = value;
+            }
+            return params;
+        }
+        
+        // 显示参数
+        const params = getParams();
+        document.getElementById('params-display').textContent = JSON.stringify(params, null, 2);
+        
+        // 检查是否有 code 参数
+        if (params.code) {
+            document.getElementById('result').innerHTML = `
+                <div class="info">
+                    <strong>📥 收到 OAuth2 参数:</strong><br>
+                    Code: <code>${params.code}</code><br>
+                    State: <code>${params.state || 'N/A'}</code><br>
+                    Error: <code>${params.error || 'N/A'}</code>
+                </div>
+            `;
+            
+            // 自动尝试启动 Activity
+            setTimeout(() => {
+                startTest();
+            }, 1000);
+        }
+        
+        // 启动测试
+        function startTest() {
+            const code = params.code || 'TEST_' + Date.now();
+            const state = params.state || 'STATE_' + Date.now();
+            
+            // 尝试启动 Android App
+            const intentUrl = `magichome://oauth2redirect?code=${code}&state=${state}`;
+            
+            console.log('尝试启动:', intentUrl);
+            
+            // 记录测试时间
+            const testTime = new Date().toLocaleTimeString();
+            document.getElementById('result').innerHTML += `
+                <div class="info">
+                    <strong>🕐 测试时间:</strong> ${testTime}<br>
+                    <strong>📱 尝试启动:</strong> <code>${intentUrl}</code>
+                </div>
+            `;
+            
+            // 显示警告
+            document.getElementById('vuln-warning').style.display = 'block';
+            
+            // 尝试启动 (需要用户确认)
+            // window.location.href = intentUrl;
+            
+            alert('请点击"打开"按钮启动 RedirectUriReceiverActivity\n\n如果成功打开 = 漏洞存在\n如果无法打开 = 可能已修复');
+        }
+        
+        // 页面加载后显示说明
+        window.onload = function() {
+            console.log('OAuth2 Redirect 测试页面已加载');
+            console.log('当前 URL:', window.location.href);
+        };
+    </script>
+</body>
+</html>
