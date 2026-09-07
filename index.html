@@ -101,7 +101,56 @@
             log('Log cleared');
         }
 
-      
+        // 调用 getUserInfo
+        function callGetUserInfo() {
+            log('Calling getUserInfo...');
+            var clazz = "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp";
+            var operationName = "getUserInfo";
+            var params = JSON.stringify({ key: "key1" });
+            var requestId = "12345";
+            var callback = "handleScreenShotCallback";
+
+            if (window.Native && typeof window.Native.nativeMethod === "function") {
+                log(`Native method called with: clazz=${clazz}, operation=${operationName}`, 'success');
+                window.Native.nativeMethod(clazz, operationName, params, requestId, callback);
+            } else {
+                log("Native interface is not available. Make sure you're running in a supported environment.", 'error');
+                alert("Native interface is not available.");
+            }
+        }
+
+        // 处理回调
+        function handleScreenShotCallback(callbackId, eventType, data, d, e) {
+            log(`Callback received - ID: ${JSON.stringify(callbackId)}, Type: ${eventType}, Data: ${JSON.stringify(data)}`, 'success');
+            alert("Callback ID: " + JSON.stringify(callbackId) + "\nEvent Type: " + eventType + "\nData: " + JSON.stringify(data));
+        }
+
+        // 注册截屏监听器
+        function callRegisterScreenShotListener() {
+            log('Registering ScreenShot Listener...');
+            var eventTypes = ["onScreenShot"];
+            var callbackInfo = {
+                callbackMethod: "handleScreenShotCallback",
+                callbackId: "12345"
+            };
+            var params = {
+                eventTypes: eventTypes,
+                callbackInfo: callbackInfo
+            };
+
+            if (window.Native && typeof window.Native.nativeMethod === "function") {
+                var clazz = "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp";
+                var operationName = "registerScreenShotListener";
+                var requestId = "12346";
+                var callback = "handleScreenShotCallback";
+                
+                log(`Registering listener with params: ${JSON.stringify(params)}`, 'success');
+                window.Native.nativeMethod(clazz, operationName, JSON.stringify(params), requestId, callback);
+            } else {
+                log("Native interface is not available for registering listener.", 'error');
+                alert("Native interface is not available.");
+            }
+        }
 
         // 页面加载时的日志
         window.onload = function() {
