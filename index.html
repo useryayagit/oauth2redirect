@@ -1,14 +1,114 @@
-<h1 id="pageTitle">Initial Text</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Native Method Call Test3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log-area {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-left: 3px solid #007bff;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .error {
+            border-left-color: #dc3545;
+            color: #dc3545;
+        }
+        .success {
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+     <h1 id="pageTitle"></h1>
+        <div class="button-group">
+            <button onclick="callGetUserInfo()">📞 Call getUserInfo</button>
+            <button onclick="callRegisterScreenShotListener()">📸 Register ScreenShot Listener</button>
+            <button onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+        
+        <div class="log-area" id="logArea">
+            <h3>Log Output:</h3>
+            <div id="logContent"></div>
+        </div>
+    </div>
 
-<script>
-    // 立即执行 - 会覆盖 Initial Text
-    console.log('Script executing at:', new Date().toLocaleTimeString());
-    var titleFromUrl = new URLSearchParams(window.location.search).get('title');
-    document.getElementById('pageTitle').innerHTML = titleFromUrl || 'No Title';
-    
-    // window.onload - 延迟执行
-    window.onload = function() {
-        console.log('onload at:', new Date().toLocaleTimeString());
-         
-    };
-</script>
+    <script>
+           var titleFromUrl = new URLSearchParams(window.location.search).get('title');
+            document.getElementById('pageTitle').innerHTML = titleFromUrl;
+        // 日志记录函数
+        function log(message, type = 'normal') {
+            const logContent = document.getElementById('logContent');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logContent').innerHTML = '';
+            log('Log cleared');
+        }
+
+      
+
+        // 页面加载时的日志
+        window.onload = function() {
+            alert("htmlmy");
+            log('Page loaded. Ready to call native methods.');
+            log('Note: Native methods will only work in supported WebView environments.');
+        };
+    </script>
+</body>
+</html>
