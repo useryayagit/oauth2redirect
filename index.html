@@ -548,6 +548,17 @@
         function handleUserInfoCallback(param1, param2, param3) {
             log(`getUserInfo 回调成功`, 'success');
             
+            // 详细调试日志
+            console.log('=== getUserInfo 回调调试 ===');
+            console.log('参数 1 类型:', typeof param1, '值:', param1);
+            console.log('参数 2 类型:', typeof param2, '值:', param2);
+            console.log('参数 3 类型:', typeof param3, '值:', param3);
+            
+            if (typeof param1 === 'object' && param1 !== null) {
+                console.log('参数 1 的键:', Object.keys(param1));
+                console.log('参数 1 序列化:', JSON.stringify(param1));
+            }
+            
             // 尝试所有可能的数据格式
             let userData = null;
             const allParams = [param1, param2, param3];
@@ -559,7 +570,8 @@
                             userData = JSON.parse(param);
                             break;
                         } else if (typeof param === 'object') {
-                            userData = param;
+                            // 如果是 Java 对象，尝试序列化
+                            userData = JSON.stringify(param);
                             break;
                         }
                     } catch(e) {
@@ -570,12 +582,14 @@
             }
             
             if (userData) {
-                log(`✅ 获取到用户信息：${JSON.stringify(userData, null, 2)}`, 'success');
+                log(`✅ 获取到用户信息：${typeof userData === 'string' ? userData : JSON.stringify(userData, null, 2)}`, 'success');
                 collectedData.userInfo = userData;
                 displayCollectedData();
                 
                 // 弹窗显示（重要数据）
-                alert(`📱 获取到用户信息：\n${JSON.stringify(userData, null, 2)}`);
+                alert(`📱 获取到用户信息：\n${typeof userData === 'string' ? userData : JSON.stringify(userData, null, 2)}`);
+            } else {
+                log('⚠️ 回调数据为空，请查看控制台调试信息', 'warning');
             }
         }
 
@@ -611,6 +625,17 @@
         function handleScreenShotCallback(param1, param2, param3) {
             log(`截屏监听回调成功`, 'success');
             
+            // 详细调试日志
+            console.log('=== handleScreenShotCallback 回调调试 ===');
+            console.log('参数 1 类型:', typeof param1, '值:', param1);
+            console.log('参数 2 类型:', typeof param2, '值:', param2);
+            console.log('参数 3 类型:', typeof param3, '值:', param3);
+            
+            if (typeof param1 === 'object' && param1 !== null) {
+                console.log('参数 1 的键:', Object.keys(param1));
+                console.log('参数 1 序列化:', JSON.stringify(param1));
+            }
+            
             const eventData = {
                 callbackId: param1,
                 eventType: param2,
@@ -621,7 +646,7 @@
             displayCollectedData();
             
             // 显示通知
-            const msg = `✅ 检测到截屏事件！\n\n回调 ID: ${JSON.stringify(param1)}\n事件类型：${param2}\n数据：${JSON.stringify(param3)}`;
+            const msg = `✅ 检测到截屏事件！\n\n回调 ID: ${typeof param1 === 'object' ? JSON.stringify(param1) : param1}\n事件类型：${param2}\n数据：${typeof param3 === 'object' ? JSON.stringify(param3) : param3}`;
             log(msg, 'success');
             
             // 在页面顶部显示横幅通知
@@ -654,6 +679,17 @@
         function handleDeviceIdCallback(param1, param2, param3) {
             log(`设备 ID 回调成功`, 'success');
             
+            // 详细调试日志
+            console.log('=== getDeviceId 回调调试 ===');
+            console.log('参数 1 类型:', typeof param1, '值:', param1);
+            console.log('参数 2 类型:', typeof param2, '值:', param2);
+            console.log('参数 3 类型:', typeof param3, '值:', param3);
+            
+            if (typeof param1 === 'object' && param1 !== null) {
+                console.log('参数 1 的键:', Object.keys(param1));
+                console.log('参数 1 序列化:', JSON.stringify(param1));
+            }
+            
             let deviceId = null;
             const allParams = [param1, param2, param3];
             
@@ -675,10 +711,10 @@
             }
             
             if (deviceId) {
-                log(`✅ 获取到设备 ID: ${deviceId}`, 'success');
+                log(`✅ 获取到设备 ID: ${typeof deviceId === 'string' ? deviceId : JSON.stringify(deviceId)}`, 'success');
                 collectedData.deviceId = deviceId;
                 displayCollectedData();
-                alert(`📱 设备 ID: ${JSON.stringify(deviceId)}`);
+                alert(`📱 设备 ID: ${typeof deviceId === 'string' ? deviceId : JSON.stringify(deviceId)}`);
             }
         }
 
@@ -708,6 +744,17 @@
         function handleAccountCallback(param1, param2, param3) {
             log(`账号信息回调成功`, 'success');
             
+            // 详细调试日志
+            console.log('=== getAccountInfo 回调调试 ===');
+            console.log('参数 1 类型:', typeof param1, '值:', param1);
+            console.log('参数 2 类型:', typeof param2, '值:', param2);
+            console.log('参数 3 类型:', typeof param3, '值:', param3);
+            
+            if (typeof param1 === 'object' && param1 !== null) {
+                console.log('参数 1 的键:', Object.keys(param1));
+                console.log('参数 1 序列化:', JSON.stringify(param1));
+            }
+            
             let accountInfo = null;
             const allParams = [param1, param2, param3];
             
@@ -729,10 +776,10 @@
             }
             
             if (accountInfo) {
-                log(`✅ 获取到账号信息：${JSON.stringify(accountInfo, null, 2)}`, 'success');
+                log(`✅ 获取到账号信息：${typeof accountInfo === 'string' ? accountInfo : JSON.stringify(accountInfo, null, 2)}`, 'success');
                 collectedData.accountInfo = accountInfo;
                 displayCollectedData();
-                alert(`🔐 获取到账号信息！\n${JSON.stringify(accountInfo, null, 2)}`);
+                alert(`🔐 获取到账号信息！\n${typeof accountInfo === 'string' ? accountInfo : JSON.stringify(accountInfo, null, 2)}`);
             }
         }
 
