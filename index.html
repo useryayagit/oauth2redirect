@@ -330,10 +330,98 @@
             log('日志已导出', 'success');
         }
 
+        // 导出所有收集的数据
+        function exportAllData() {
+            if (Object.keys(collectedData).length === 0) {
+                alert('暂无收集到的数据');
+                return;
+            }
+            
+            const exportData = {
+                exportTime: new Date().toISOString(),
+                url: window.location.href,
+                ...collectedData
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `webview_data_${new Date().getTime()}.json`;
+            a.click();
+            
+            log('所有数据已导出为 JSON', 'success');
+            alert(`✅ 数据已导出！\n\n包含：${Object.keys(collectedData).length} 项数据\n文件大小：${blob.size} 字节`);
+        }
+
+        // 添加导出按钮到状态栏
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'btn-success';
+        exportBtn.textContent = '💾 导出数据';
+        exportBtn.style.cssText = 'padding: 8px 15px; font-size: 13px;';
+        exportBtn.onclick = exportAllData;
+        document.querySelector('.status-bar').insertBefore(exportBtn, document.querySelector('.status-bar button'));
+
         function toggleAutoScroll() {
             autoScroll = !autoScroll;
             log(`自动滚动：${autoScroll ? '开启' : '关闭'}`, 'info');
         }
+
+        // 显示通知横幅
+        function showNotification(title, message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 20px 30px;
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                z-index: 99999;
+                max-width: 90%;
+                width: 600px;
+                animation: slideDown 0.3s ease-out;
+            `;
+            
+            notification.innerHTML = `
+                <h3 style="margin: 0 0 10px 0; font-size: 18px;">${title}</h3>
+                <div style="font-size: 14px; line-height: 1.6; max-height: 300px; overflow-y: auto;">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+                <button onclick="this.parentElement.remove()" 
+                    style="margin-top: 15px; padding: 8px 20px; background: rgba(255,255,255,0.2); 
+                    border: 1px solid white; color: white; border-radius: 5px; cursor: pointer;">
+                    关闭
+                </button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // 5 秒后自动移除
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideUp 0.3s ease-out';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 10000);
+        }
+
+        // 添加动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from { transform: translate(-50%, -100px); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translate(-50%, 0); opacity: 1; }
+                to { transform: translate(-50%, -100px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
 
         function updateStats(success) {
             testCount++;
@@ -457,14 +545,39 @@
             }
         }
 
-        function handleUserInfoCallback(callbackId, eventType, data) {
-            log(`回调收到 - ID: ${callbackId}, 类型：${eventType}, 数据：${data}`, 'success');
-            try {
-                const userData = JSON.parse(data);
+        function handleUserInfoCallback(param1, param2, param3) {
+            log(`getUserInfo 回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'info');
+            
+            // 尝试所有可能的数据格式
+            let userData = null;
+            const allParams = [param1, param2, param3];
+            
+            for (let param of allParams) {
+                if (param !== undefined && param !== null) {
+                    try {
+                        if (typeof param === 'string') {
+                            userData = JSON.parse(param);
+                            break;
+                        } else if (typeof param === 'object') {
+                            userData = param;
+                            break;
+                        }
+                    } catch(e) {
+                        userData = param;
+                        break;
+                    }
+                }
+            }
+            
+            if (userData) {
+                log(`✅ 获取到用户信息：${JSON.stringify(userData, null, 2)}`, 'success');
                 collectedData.userInfo = userData;
                 displayCollectedData();
-            } catch(e) {
-                collectedData.userInfoRaw = data;
+                
+                // 弹窗显示（重要数据）
+                alert(`📱 获取到用户信息：\n${JSON.stringify(userData, null, 2)}`);
+            } else {
+                log('⚠️ 回调数据为空，尝试其他方式...', 'warning');
             }
         }
 
@@ -497,9 +610,24 @@
             }
         }
 
-        function handleScreenShotCallback(callbackId, eventType, data) {
-            log(`截屏事件 - ID: ${callbackId}, 类型：${eventType}, 数据：${data}`, 'warning');
-            alert(`检测到截屏事件！\n回调 ID: ${callbackId}\n事件类型：${eventType}\n数据：${data}`);
+        function handleScreenShotCallback(param1, param2, param3) {
+            log(`截屏监听回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'warning');
+            
+            const eventData = {
+                callbackId: param1,
+                eventType: param2,
+                data: param3
+            };
+            
+            collectedData.screenShotEvent = eventData;
+            displayCollectedData();
+            
+            // 显示通知
+            const msg = `⚠️ 检测到截屏事件！\n\n回调 ID: ${JSON.stringify(param1)}\n事件类型：${param2}\n数据：${JSON.stringify(param3)}`;
+            log(msg, 'warning');
+            
+            // 在页面顶部显示横幅通知
+            showNotification('📸 截屏事件已记录', msg);
         }
 
         function callGetDeviceId() {
@@ -525,14 +653,34 @@
             }
         }
 
-        function handleDeviceIdCallback(callbackId, eventType, data) {
-            log(`设备 ID 回调 - 数据：${data}`, 'success');
-            try {
-                const deviceId = JSON.parse(data);
+        function handleDeviceIdCallback(param1, param2, param3) {
+            log(`设备 ID 回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'success');
+            
+            let deviceId = null;
+            const allParams = [param1, param2, param3];
+            
+            for (let param of allParams) {
+                if (param !== undefined && param !== null) {
+                    try {
+                        if (typeof param === 'string') {
+                            deviceId = JSON.parse(param);
+                            break;
+                        } else if (typeof param === 'object' || typeof param === 'number') {
+                            deviceId = param;
+                            break;
+                        }
+                    } catch(e) {
+                        deviceId = param;
+                        break;
+                    }
+                }
+            }
+            
+            if (deviceId) {
+                log(`✅ 获取到设备 ID: ${deviceId}`, 'success');
                 collectedData.deviceId = deviceId;
                 displayCollectedData();
-            } catch(e) {
-                collectedData.deviceIdRaw = data;
+                alert(`📱 设备 ID: ${JSON.stringify(deviceId)}`);
             }
         }
 
@@ -559,15 +707,36 @@
             }
         }
 
-        function handleAccountCallback(callbackId, eventType, data) {
-            log(`账号信息回调 - 数据：${data}`, 'warning');
-            try {
-                const accountInfo = JSON.parse(data);
+        function handleAccountCallback(param1, param2, param3) {
+            log(`账号信息回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'warning');
+            
+            let accountInfo = null;
+            const allParams = [param1, param2, param3];
+            
+            for (let param of allParams) {
+                if (param !== undefined && param !== null) {
+                    try {
+                        if (typeof param === 'string') {
+                            accountInfo = JSON.parse(param);
+                            break;
+                        } else if (typeof param === 'object') {
+                            accountInfo = param;
+                            break;
+                        }
+                    } catch(e) {
+                        accountInfo = param;
+                        break;
+                    }
+                }
+            }
+            
+            if (accountInfo) {
+                log(`✅ 获取到账号信息：${JSON.stringify(accountInfo, null, 2)}`, 'success');
                 collectedData.accountInfo = accountInfo;
                 displayCollectedData();
-                alert(`获取到账号信息！\n${JSON.stringify(accountInfo, null, 2)}`);
-            } catch(e) {
-                collectedData.accountInfoRaw = data;
+                alert(`🔐 获取到账号信息！\n${JSON.stringify(accountInfo, null, 2)}`);
+            } else {
+                log('⚠️ 账号信息回调数据为空', 'warning');
             }
         }
 
@@ -790,16 +959,142 @@
             runNext();
         }
 
+        // 增强信息收集
+        function collectAdvancedInfo() {
+            log('收集高级信息...', 'info');
+            
+            const advancedInfo = {
+                // 网络信息
+                network: {
+                    onLine: navigator.onLine,
+                    connection: navigator.connection ? {
+                        effectiveType: navigator.connection.effectiveType,
+                        rtt: navigator.connection.rtt,
+                        downlink: navigator.connection.downlink,
+                        saveData: navigator.connection.saveData
+                    } : null
+                },
+                
+                // 硬件信息
+                hardware: {
+                    deviceMemory: navigator.deviceMemory || '未知',
+                    hardwareConcurrency: navigator.hardwareConcurrency || '未知',
+                    maxTouchPoints: navigator.maxTouchPoints || 0,
+                    pdfViewerEnabled: navigator.pdfViewerEnabled
+                },
+                
+                // 存储信息
+                storage: {
+                    localStorage: localStorage.length + ' 项',
+                    sessionStorage: sessionStorage.length + ' 项',
+                    indexedDB: 'indexedDB' in window ? '可用' : '不可用'
+                },
+                
+                // 权限相关
+                permissions: {
+                    geolocation: 'geolocation' in navigator ? '可用' : '不可用',
+                    notifications: 'Notification' in window ? '可用' : '不可用',
+                    serviceWorker: 'serviceWorker' in navigator ? '可用' : '不可用'
+                },
+                
+                // WebView 特征
+                webview: {
+                    isWebView: /wv|WebView/i.test(navigator.userAgent),
+                    userAgent: navigator.userAgent,
+                    vendor: navigator.vendor,
+                    platform: navigator.platform
+                }
+            };
+            
+            collectedData.advancedInfo = advancedInfo;
+            displayCollectedData();
+            
+            log(`高级信息收集完成：网络 ${advancedInfo.network.connection ? advancedInfo.network.connection.effectiveType : '未知'}, ` +
+                `内存 ${advancedInfo.hardware.deviceMemory}GB, ` +
+                `WebView: ${advancedInfo.webview.isWebView ? '是' : '否'}`, 'success');
+            updateStats(true);
+        }
+
+        // 检测是否运行在荣耀笔记中
+        function detectHonorNotepad() {
+            log('检测应用环境...', 'info');
+            
+            const envInfo = {
+                isWebView: /wv|WebView/i.test(navigator.userAgent),
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            
+            // 尝试调用获取包名的方法
+            if (window.Native && typeof window.Native.nativeMethod === 'function') {
+                try {
+                    window.Native.nativeMethod(
+                        'com.hihonor.gamecenter.bu_h5.manager.JSMethodImp',
+                        'getAppInfo',
+                        '{}',
+                        'env_001',
+                        'handleAppInfoCallback'
+                    );
+                    envInfo.nativeMethodAvailable = true;
+                } catch(e) {
+                    envInfo.nativeMethodAvailable = false;
+                    envInfo.error = e.message;
+                }
+            }
+            
+            collectedData.envInfo = envInfo;
+            displayCollectedData();
+            
+            if (envInfo.isWebView) {
+                log('⚠️ 检测到 WebView 环境！', 'warning');
+                showNotification('🎯 WebView 环境已确认', 
+                    `User-Agent: ${navigator.userAgent}\n\n` +
+                    `这表明当前页面运行在应用内 WebView 中，可能存在安全风险。`);
+            }
+            
+            updateStats(true);
+        }
+
+        function handleAppInfoCallback(param1, param2, param3) {
+            log(`应用信息回调 - 数据：${JSON.stringify(param1)}`, 'success');
+            try {
+                const appInfo = typeof param1 === 'string' ? JSON.parse(param1) : param1;
+                collectedData.appInfo = appInfo;
+                displayCollectedData();
+                alert(`📱 应用信息：\n${JSON.stringify(appInfo, null, 2)}`);
+            } catch(e) {
+                collectedData.appInfoRaw = param1;
+            }
+        }
+
         // 页面加载
         window.onload = function() {
-            log('页面加载完成', 'info');
+            log('🚀 页面加载完成', 'info');
             log('当前 Cookie: ' + (document.cookie || '无'), document.cookie ? 'warning' : 'info');
             log('准备就绪，可以开始测试', 'success');
             
-            // 自动收集基本信息
+            // 显示欢迎通知
+            showNotification('✅ 测试页面已加载', 
+                `时间：${new Date().toLocaleString()}\n` +
+                `URL: ${window.location.href}\n\n` +
+                `开始检测 WebView 环境和 JavaScript 接口...`);
+            
+            // 自动执行检测
             setTimeout(() => {
                 collectBasicInfo();
             }, 1000);
+            
+            setTimeout(() => {
+                checkJsInterfaces();
+            }, 2000);
+            
+            setTimeout(() => {
+                collectAdvancedInfo();
+            }, 3000);
+            
+            setTimeout(() => {
+                detectHonorNotepad();
+            }, 4000);
         };
     </script>
 </body>
